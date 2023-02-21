@@ -28,7 +28,7 @@ def hello():
 @app.route('/train/<uuid>', methods=['POST'])
 def train(uuid: str):
     # studies = json.loads(request.json)['articles']
-    labeled_data = json.loads(request.json)['labeled_data']
+    labeled_data = request.json['labeled_data']
 
     titles, abstracts, labels = [], [], []
 

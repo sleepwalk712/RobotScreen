@@ -36,5 +36,5 @@ headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 requests.post(base_url + 'train/1338', json=json.dumps({"labeled_data": data}), headers=headers)
 
 # testing example
-predictions = requests.post(base_url + 'predict/vaccine_model', json=json.dumps({"input_citations": data}), headers=headers)
+predictions = requests.post(base_url + 'predict/1338', json=json.dumps({"input_citations": data}), headers=headers)
 print(predictions.json())
