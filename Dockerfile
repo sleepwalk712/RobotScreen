@@ -54,4 +54,3 @@ RUN conda install -y -c conda-forge cudatoolkit=11.1.1 \
  EXPOSE 5000
 
  CMD ["python3", "screener_app.py"]
- CMD tail -f /dev/null

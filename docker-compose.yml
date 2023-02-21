@@ -1,0 +1,11 @@
+version: '3.3'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "7777:5000"
+    volumes:
+      - .:/app
