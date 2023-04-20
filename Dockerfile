@@ -52,5 +52,3 @@ RUN conda install -y -c conda-forge cudatoolkit=11.1.1 \
 
  #Open Port for forwarding
  EXPOSE 5000
-
- CMD ["python3", "screener_app.py"]
