@@ -39,17 +39,19 @@ def train(uuid: str):
 
     dataset = SRDataset(titles, abstracts, np.array(labels))
 
-    success = screening_model.train_and_save(dataset, uuid, batch_size=8, epochs=1)
+    success = screening_model.train_and_save(
+        dataset, uuid, batch_size=8, epochs=1)
     return f"success training? {success}"
 
 
 @app.route('/predict/<uuid>', methods=['POST'])
 def predict(uuid: str):
-    studies = json.loads(request.json)['input_citations']
+    #studies = json.loads(request.json)['input_citations']
+    unlabel_data = request.json['input_citations']
 
     titles, abstracts = [], []
 
-    for citation in studies:
+    for citation in unlabel_data:
         titles.append(citation['ti'])
         abstracts.append(citation['abs'])
 
@@ -66,7 +68,8 @@ def predict(uuid: str):
     # note that we assume a *.pt extension for the pytorch stuff.
     weights_path = os.path.join("saved_model_weights", uuid + ".pt")
     print(f"loading model weights from {weights_path}...")
-    model.load_state_dict(torch.load(weights_path, map_location=torch.device(device)))
+    model.load_state_dict(torch.load(
+        weights_path, map_location=torch.device(device)))
 
     dl = DataLoader(dataset, batch_size=8)
     preds, _ = screening_model.make_preds(dl, model, tokenizer, device=device)

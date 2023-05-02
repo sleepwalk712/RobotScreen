@@ -9,11 +9,11 @@ services:
       - "7777:5000"
     volumes:
       - .:/app
-    command: gunicorn --bind 0.0.0.0:5000 screener_app:app
+    command: gunicorn --bind 0.0.0.0:5000 screener_app:app --timeout 300
     deploy:
       resources:
         reservations:
           devices:
             - driver: nvidia
               count: 1
-              capabilities: [gpu]
+              capabilities: [ gpu ]
