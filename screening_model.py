@@ -8,8 +8,10 @@ import os
 from typing import Type, Tuple
 import copy
 import collections
+from datetime import datetime
 
 import numpy as np
+from flask import jsonify
 
 import sklearn  # just for evaluation
 from sklearn import metrics
@@ -69,8 +71,10 @@ def train(
             )
             batch_y_tensor = torch.tensor(y)
             model_outputs = model(
-                torch.tensor(batch_X_tensor['input_ids']).to(device=config.DEVICE),
-                attention_mask=torch.tensor(batch_X_tensor['attention_mask']).to(device=config.DEVICE),
+                torch.tensor(batch_X_tensor['input_ids']).to(
+                    device=config.DEVICE),
+                attention_mask=torch.tensor(
+                    batch_X_tensor['attention_mask']).to(device=config.DEVICE),
                 labels=batch_y_tensor.to(device=config.DEVICE),
             )
 
@@ -78,17 +82,20 @@ def train(
 
             running_losses.append(model_outputs['loss'].detach().float())
             if batch_num % 10 == 0:
-                avg_loss = sum(running_losses[-10:]) / len(running_losses[-10:])
+                avg_loss = sum(running_losses[-10:]) / \
+                    len(running_losses[-10:])
                 print(f"avg loss for last 10 batches: {avg_loss}")
             optimizer.step()
 
         if val_dataset is not None:
             # note that we use the same batchsize for val as for train
             val_dl = DataLoader(val_dataset, batch_size=dl.batch_size)
-            preds, labels = make_preds(val_dl, model, tokenizer, device=config.DEVICE)
+            preds, labels = make_preds(
+                val_dl, model, tokenizer, device=config.DEVICE)
             results = classification_eval(preds, labels, threshold=0.5)
             # composite score; ad-hoc, I know
-            score = recall_weight * results['recall'][1] + results['precision'][1]
+            score = recall_weight * \
+                results['recall'][1] + results['precision'][1]
             results["score"] = score
             print(results)
 
@@ -121,7 +128,8 @@ def make_preds(
             )
             model_outputs = model(
                 torch.tensor(batch_X_tensor['input_ids']).to(device=device),
-                attention_mask=torch.tensor(batch_X_tensor['attention_mask'],).to(device=device)
+                attention_mask=torch.tensor(
+                    batch_X_tensor['attention_mask'],).to(device=device)
             )
 
             probs = torch.softmax(model_outputs['logits'].cpu(), 1)[:, 1]
@@ -181,21 +189,28 @@ def train_and_save(
     # examples for batch construction, to account for data imbalance.
     weighted_sampler = get_weighted_sampler(sr_dataset)
 
-    dl = DataLoader(sr_dataset, batch_size=batch_size, sampler=weighted_sampler)
+    dl = DataLoader(
+        sr_dataset,
+        batch_size=batch_size,
+        sampler=weighted_sampler,
+    )
     model_state, tokenizer = train(dl, epochs=epochs, val_dataset=val_dataset)
 
-    out_path = os.path.join(WEIGHTS_PATH, uuid + ".pt")
+    current_time = datetime.now().strftime('%Y%m%d%H%M%S')
+    file_name = f"abstract_screening_{uuid}_{current_time}.pt"
+    out_path = os.path.join(WEIGHTS_PATH, file_name)
     try:
         print(f"dumping model weights to {out_path}...")
         torch.save(model_state, out_path)
         print("done.")
-        return True
-    except Exception:
-        return False
+        return {"success": True, "message": "Model weights saved successfully.", "timestamp": current_time}
+    except Exception as e:
+        return {"success": False, "message": f"Error saving model weights: {str(e)}"}
 
 
 class SRDataset(Dataset):
     ''' A torch Dataset wrapper for screening corpora '''
+
     def __init__(self, titles, abstracts, labels=None):
         super(SRDataset).__init__()
         self.titles = titles

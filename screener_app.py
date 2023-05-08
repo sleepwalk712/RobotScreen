@@ -5,13 +5,16 @@ import os
 import gc
 
 import numpy as np
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import torch
 from transformers import RobertaForSequenceClassification, RobertaTokenizer
 from torch.utils.data import DataLoader
 
 import screening_model
 from screening_model import SRDataset
+import config
+
+WEIGHTS_PATH = config.WEIGHTS_PATH
 
 
 app = Flask(__name__)
@@ -25,7 +28,7 @@ def hello():
     return 'Welcome to RobotScreener ;)'
 
 
-@app.route('/train/<uuid>', methods=['POST'])
+@app.route('/train/abstract_screenings/<uuid>', methods=['POST'])
 def train(uuid: str):
     # studies = json.loads(request.json)['articles']
     labeled_data = request.json['labeled_data']
@@ -39,15 +42,20 @@ def train(uuid: str):
 
     dataset = SRDataset(titles, abstracts, np.array(labels))
 
-    success = screening_model.train_and_save(
-        dataset, uuid, batch_size=8, epochs=1)
-    return f"success training? {success}"
+    response = screening_model.train_and_save(
+        dataset,
+        uuid,
+        batch_size=8,
+        epochs=1,
+    )
+    return jsonify(response)
 
 
-@app.route('/predict/<uuid>', methods=['POST'])
+@app.route('/predict/abstract_screenings/<uuid>', methods=['POST'])
 def predict(uuid: str):
-    #studies = json.loads(request.json)['input_citations']
+    # studies = json.loads(request.json)['input_citations']
     unlabel_data = request.json['input_citations']
+    timestamp = request.json['timestamp']
 
     titles, abstracts = [], []
 
@@ -66,7 +74,8 @@ def predict(uuid: str):
     ).to(device=device)
 
     # note that we assume a *.pt extension for the pytorch stuff.
-    weights_path = os.path.join("saved_model_weights", uuid + ".pt")
+    file_name = f"abstract_screening_{uuid}_{timestamp}.pt"
+    weights_path = os.path.join(WEIGHTS_PATH, file_name)
     print(f"loading model weights from {weights_path}...")
     model.load_state_dict(torch.load(
         weights_path, map_location=torch.device(device)))
@@ -76,7 +85,7 @@ def predict(uuid: str):
 
     # oddly without this memory will not be released following the predictions
     gc.collect()
-    return {"predictions": preds}
+    return jsonify({"predictions": preds})
 
 
 if __name__ == '__main__':
