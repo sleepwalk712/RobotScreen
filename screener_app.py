@@ -8,6 +8,7 @@ import numpy as np
 from flask import Flask, request, jsonify
 import torch
 from transformers import RobertaForSequenceClassification, RobertaTokenizer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from torch.utils.data import DataLoader
 
 import screening_model
@@ -20,7 +21,7 @@ WEIGHTS_PATH = config.WEIGHTS_PATH
 app = Flask(__name__)
 
 # for now, assuming predictions on cpu.
-device = "cpu"
+device = "cuda"
 
 
 @app.route('/')
@@ -67,11 +68,14 @@ def predict(uuid: str):
 
     # we just outright assume that we are using Roberta; this will break
     # if untrue. TODO probably want to add flexibility here.
-    tokenizer = RobertaTokenizer.from_pretrained("allenai/biomed_roberta_base")
-    model = RobertaForSequenceClassification.from_pretrained(
-        "allenai/biomed_roberta_base",
-        num_labels=2,
-    ).to(device=device)
+    # tokenizer = RobertaTokenizer.from_pretrained("allenai/biomed_roberta_base")
+    tokenizer = AutoTokenizer.from_pretrained('michiyasunaga/BioLinkBERT-base')
+    # model = RobertaForSequenceClassification.from_pretrained(
+    #    "allenai/biomed_roberta_base",
+    #    num_labels=2,
+    # ).to(device=device)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        'michiyasunaga/BioLinkBERT-base', num_labels=2).to(device=config.DEVICE)
 
     # note that we assume a *.pt extension for the pytorch stuff.
     file_name = f"abstract_screening_{uuid}_{timestamp}.pt"

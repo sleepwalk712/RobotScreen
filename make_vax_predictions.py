@@ -4,6 +4,7 @@ import json
 import pandas as pd
 import torch
 from transformers import RobertaForSequenceClassification, RobertaTokenizer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from torch.utils.data import DataLoader
 
 import screening_model
@@ -23,21 +24,26 @@ def make_predictions_from_json(inputs_path="example-datasets/2021trials.json", u
 
     dataset = SRDataset(titles, abstracts)
 
-    tokenizer = RobertaTokenizer.from_pretrained("allenai/biomed_roberta_base")
-    model = RobertaForSequenceClassification.from_pretrained(
-        "allenai/biomed_roberta_base",
-        num_labels=2,
-    ).to(device=device)
+    # tokenizer = RobertaTokenizer.from_pretrained("allenai/biomed_roberta_base")
+    tokenizer = AutoTokenizer.from_pretrained('michiyasunaga/BioLinkBERT-base')
+    # model = RobertaForSequenceClassification.from_pretrained(
+    #    "allenai/biomed_roberta_base",
+    #    num_labels=2,
+    # ).to(device=device)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        'michiyasunaga/BioLinkBERT-base', num_labels=2).to(device=config.DEVICE)
 
     # note that we assume a *.pt extension for the pytorch stuff.
     weights_path = os.path.join("saved_model_weights", uuid + ".pt")
     print(f"loading model weights from {weights_path}...")
-    model.load_state_dict(torch.load(weights_path, map_location=torch.device(device)))
+    model.load_state_dict(torch.load(
+        weights_path, map_location=torch.device(device)))
 
     dl = DataLoader(dataset, batch_size=8)
     preds, _ = screening_model.make_preds(dl, model, tokenizer, device=device)
-    df = pd.DataFrame({"titles": titles, "abstracts": abstracts, "predictions": preds})
-    df.to_csv("vaccine_preds.csv", index=False) 
+    df = pd.DataFrame(
+        {"titles": titles, "abstracts": abstracts, "predictions": preds})
+    df.to_csv("vaccine_preds.csv", index=False)
 
 
 make_predictions_from_json()

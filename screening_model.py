@@ -22,6 +22,7 @@ from torch import optim
 
 import transformers
 from transformers import RobertaForSequenceClassification, RobertaTokenizer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 ###
 # Globals; need to be edited for server.
@@ -45,11 +46,14 @@ def train(
     '''
 
     ''' Model and optimizer '''
-    tokenizer = RobertaTokenizer.from_pretrained("allenai/biomed_roberta_base")
-    model = RobertaForSequenceClassification.from_pretrained(
-        "allenai/biomed_roberta_base",
-        num_labels=2,
-    ).to(device=config.DEVICE)
+    # tokenizer = RobertaTokenizer.from_pretrained("allenai/biomed_roberta_base")
+    tokenizer = AutoTokenizer.from_pretrained('michiyasunaga/BioLinkBERT-base')
+    # model = RobertaForSequenceClassification.from_pretrained(
+    #    "allenai/biomed_roberta_base",
+    #    num_labels=2,
+    # ).to(device=config.DEVICE)
+    model = AutoModelForSequenceClassification.from_pretrained(
+        'michiyasunaga/BioLinkBERT-base', num_labels=2).to(device=config.DEVICE)
 
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 
