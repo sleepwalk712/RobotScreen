@@ -11,7 +11,6 @@ import collections
 from datetime import datetime
 
 import numpy as np
-from flask import jsonify
 
 import sklearn  # just for evaluation
 from sklearn import metrics
@@ -21,7 +20,6 @@ from torch.utils.data import Dataset, DataLoader, WeightedRandomSampler
 from torch import optim
 
 import transformers
-from transformers import RobertaForSequenceClassification, RobertaTokenizer
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 ###
