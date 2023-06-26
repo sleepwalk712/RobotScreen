@@ -46,14 +46,9 @@ def train(
     '''
 
     ''' Model and optimizer '''
-    # tokenizer = RobertaTokenizer.from_pretrained("allenai/biomed_roberta_base")
-    tokenizer = AutoTokenizer.from_pretrained('michiyasunaga/BioLinkBERT-base')
-    # model = RobertaForSequenceClassification.from_pretrained(
-    #    "allenai/biomed_roberta_base",
-    #    num_labels=2,
-    # ).to(device=config.DEVICE)
+    tokenizer = AutoTokenizer.from_pretrained(config.MODEL_NAME)
     model = AutoModelForSequenceClassification.from_pretrained(
-        'michiyasunaga/BioLinkBERT-base', num_labels=2).to(device=config.DEVICE)
+        config.MODEL_NAME, num_labels=2).to(device=config.DEVICE)
 
     optimizer = optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 

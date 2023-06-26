@@ -1,13 +1,9 @@
-import json
 import os
-# seems wrong, but for some reason manually invoking garbage collection
-# is necessary to release memory after predictions (?)
 import gc
 
 import numpy as np
 from flask import Flask, request, jsonify
 import torch
-from transformers import RobertaForSequenceClassification, RobertaTokenizer
 from transformers import AutoTokenizer, AutoModelForSequenceClassification
 from torch.utils.data import DataLoader
 
@@ -15,13 +11,8 @@ import screening_model
 from screening_model import SRDataset
 import config
 
-WEIGHTS_PATH = config.WEIGHTS_PATH
-
 
 app = Flask(__name__)
-
-# for now, assuming predictions on cpu.
-device = "cuda"
 
 
 @app.route('/')
@@ -31,7 +22,6 @@ def hello():
 
 @app.route('/train/abstract_screenings/<uuid>', methods=['POST'])
 def train(uuid: str):
-    # studies = json.loads(request.json)['articles']
     labeled_data = request.json['labeled_data']
 
     titles, abstracts, labels = [], [], []
@@ -54,7 +44,6 @@ def train(uuid: str):
 
 @app.route('/predict/abstract_screenings/<uuid>', methods=['POST'])
 def predict(uuid: str):
-    # studies = json.loads(request.json)['input_citations']
     unlabel_data = request.json['input_citations']
     timestamp = request.json['timestamp']
 
@@ -66,28 +55,26 @@ def predict(uuid: str):
 
     dataset = SRDataset(titles, abstracts)
 
-    # we just outright assume that we are using Roberta; this will break
-    # if untrue. TODO probably want to add flexibility here.
-    # tokenizer = RobertaTokenizer.from_pretrained("allenai/biomed_roberta_base")
-    tokenizer = AutoTokenizer.from_pretrained('michiyasunaga/BioLinkBERT-base')
-    # model = RobertaForSequenceClassification.from_pretrained(
-    #    "allenai/biomed_roberta_base",
-    #    num_labels=2,
-    # ).to(device=device)
+    tokenizer = AutoTokenizer.from_pretrained(config.MODEL_NAME)
     model = AutoModelForSequenceClassification.from_pretrained(
-        'michiyasunaga/BioLinkBERT-base', num_labels=2).to(device=config.DEVICE)
+        config.MODEL_NAME, num_labels=2).to(device=config.DEVICE)
 
-    # note that we assume a *.pt extension for the pytorch stuff.
     file_name = f"abstract_screening_{uuid}_{timestamp}.pt"
-    weights_path = os.path.join(WEIGHTS_PATH, file_name)
+    weights_path = os.path.join(config.WEIGHTS_PATH, file_name)
     print(f"loading model weights from {weights_path}...")
-    model.load_state_dict(torch.load(
-        weights_path, map_location=torch.device(device)))
+    try:
+        model.load_state_dict(torch.load(
+            weights_path, map_location=torch.device(config.DEVICE)))
+    except FileNotFoundError:
+        return jsonify({"error": "model weights not found"}), 404
 
     dl = DataLoader(dataset, batch_size=8)
-    preds, _ = screening_model.make_preds(dl, model, tokenizer, device=device)
+    try:
+        preds, _ = screening_model.make_preds(
+            dl, model, tokenizer, device=config.DEVICE)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    # oddly without this memory will not be released following the predictions
     gc.collect()
     return jsonify({"predictions": preds})
 
