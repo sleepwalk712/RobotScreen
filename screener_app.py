@@ -37,7 +37,7 @@ def train(uuid: str):
         dataset,
         uuid,
         batch_size=8,
-        epochs=1,
+        epochs=5,
     )
     return jsonify(response)
 

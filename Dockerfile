@@ -1,4 +1,4 @@
-FROM nvidia/cuda:11.4.0-base-ubuntu20.04
+FROM nvidia/cuda:11.4.3-base-ubuntu20.04
 
 # Install some basic utilities
 RUN apt-get update && apt-get install -y \
